@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import "dotenv/config";
 
+
 const verifyEmail = (token, email) => {
   let mailTransporter = nodemailer.createTransport({
     service: "gmail",
