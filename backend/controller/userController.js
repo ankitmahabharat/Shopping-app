@@ -1,7 +1,7 @@
 import { User } from "../models/userModel.js";
 import bcrypt from "bcryptjs";
-import jwt from 'jsonwebtoken';
-import verifyEmail from "../emailVerify/verifyEmail.js"
+import jwt from "jsonwebtoken";
+import verifyEmail from "../emailVerify/verifyEmail.js";
 
 export const register = async (req, res) => {
   try {
@@ -13,11 +13,18 @@ export const register = async (req, res) => {
     if (user) {
       return res.status(409).json({ message: "User already exists" });
     }
-     const hashPassword = await bcrypt.hash(password,10)
-    const newUser = await User.create({ firstName, lastName, email, password:hashPassword});
-    const token = jwt.sign({id:newUser._id}, process.env.SECRET_KEY, {expiresIn : '10m'})
-    verifyEmail (token,email)
-    newUser.token= token 
+    const hashPassword = await bcrypt.hash(password, 10);
+    const newUser = await User.create({
+      firstName,
+      lastName,
+      email,
+      password: hashPassword,
+    });
+    const token = jwt.sign({ id: newUser._id }, process.env.SECRET_KEY, {
+      expiresIn: "10m",
+    });
+    verifyEmail(token, email);
+    newUser.token = token;
     await newUser.save();
     return res.status(201).json({
       success: true,
@@ -30,6 +37,53 @@ export const register = async (req, res) => {
       success: false,
       message: "Internal server error",
       error: error.message,
+    });
+  }
+};
+
+export const verify = async (req, res) => {
+  try {
+    const authHeader = req.hedders.authorization;
+    if (!authHeader || authHeader.startsWith("Bearer")) {
+      res.status(400).json({
+        success: false,
+        message: "Aurthorization token are missing or invalid",
+      });
+    }
+    const token = authHeader.split("")[1];
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.SECRET_KEY);
+    } catch (error) {
+      if (error.name === "TokenExpiredError") {
+        return res.status(400).json({
+          success: false,
+          message: "The registration token has exired",
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: "token verification failed",
+      });
+    }
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "user not found",
+      });
+    }
+    user.token = null;
+    user.isVerified = true;
+    await user.save();
+    return res.status(200).json({
+      success: true,
+      message: "Email verified Successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 };
