@@ -116,3 +116,49 @@ export const reVerify= async (req,res )=>{
     })
   }
 }
+
+export const login = async(req,res)=>{
+try {
+  const {email,password}= req.body;
+  if (!email || !password) {
+    return res.status(400).json({
+      success: false,
+      message : 'all files are required'
+    })
+    
+  }
+  const existingUser = await User.findOne({email})
+  if (existingUser) {
+    return res.status(400).json({
+      success : false,
+      message : "user not exist"
+    })
+    
+  }
+  const isPasswordValid = await bcrypt.compare(password, existingUser.password)
+  if(!isPasswordValid){
+    return res.status(400).json({
+      success : false,
+      message : "Invalid Credentials"
+    })
+  }
+  if (existingUser.isVerified === false) {
+    return res.status(400).json({
+      success : false,
+      message : "verify your account and login again !"
+    })
+  }
+  const accessToken = jwt.sign({id: existingUser._id}, process.env.SECRET_KEY,{expiresIn : '10d'})
+  const refreshToken = jwt.sign({id: existingUser._id}, process.env.SECRET_KEY,{expiresIn : '30d'})
+
+  existingUser.isLoggedIn = true
+  await existingUser.save()
+} catch (error) {
+  res.status(500).json({
+    success : false,
+    message : error.message
+  })
+  
+}
+
+}
