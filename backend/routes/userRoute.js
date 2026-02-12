@@ -1,8 +1,7 @@
 import express from 'express';
-import { register } from '../controller/userController.js';
-// import { verify } from 'jsonwebtoken';
-import pkg from "jsonwebtoken";
-const { verify } = pkg;
+import { register, reVerify, verify } from '../controller/userController.js';
+
+
 
 
 const router = express.Router();
@@ -10,5 +9,6 @@ const router = express.Router();
 
 router.post('/register', register) 
 router.post('/verify', verify) 
+router.post('/reVerify', reVerify) 
 
 export default router;

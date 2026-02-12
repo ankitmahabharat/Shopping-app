@@ -43,14 +43,14 @@ export const register = async (req, res) => {
 
 export const verify = async (req, res) => {
   try {
-    const authHeader = req.hedders.authorization;
-    if (!authHeader || authHeader.startsWith("Bearer")) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       res.status(400).json({
         success: false,
         message: "Aurthorization token are missing or invalid",
       });
     }
-    const token = authHeader.split("")[1];
+    const token = authHeader.split(" ")[1];
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.SECRET_KEY);
@@ -58,7 +58,7 @@ export const verify = async (req, res) => {
       if (error.name === "TokenExpiredError") {
         return res.status(400).json({
           success: false,
-          message: "The registration token has exired",
+          message: "The registration token has expired",
         });
       }
       return res.status(400).json({
@@ -87,3 +87,32 @@ export const verify = async (req, res) => {
     });
   }
 };
+
+export const reVerify= async (req,res )=>{
+  try {
+    const {email}= req.body;
+    const user = await User.findOne({email})
+    if (!user){
+      return req.status(400).json({
+        success : false,
+        message: "user not found"
+      })
+    }
+    const token =jwt.sign({id: user._id},process.env.SECRET_key,{expiresIn :'10m'})
+    verifyEmail(token,email)
+    user.token=token
+    await user.save()
+    return res.status(200).json({
+      success: true,
+      message :"verification email sent again successfully",
+      token:user.token
+
+    })
+    
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message:error.message
+    })
+  }
+}
