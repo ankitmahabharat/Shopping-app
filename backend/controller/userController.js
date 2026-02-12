@@ -2,6 +2,7 @@ import { User } from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import verifyEmail from "../emailVerify/verifyEmail.js";
+import { Session } from "../models/sessionModel.js";
 
 export const register = async (req, res) => {
   try {
@@ -153,6 +154,20 @@ try {
 
   existingUser.isLoggedIn = true
   await existingUser.save()
+
+  const existingSession = await Session.findOne({userId:existingUser._id})
+  if (existingSession){
+    await Session.deleteOne({userId:existingUser._id})
+  }
+
+  await Session.create ({userId:existingUser._id})
+  return res.status(200).json({
+success :true,
+message: `Welcome back ${existingUser.firstName}`,
+user :existingUser,
+accessToken,
+refreshToken
+  })
 } catch (error) {
   res.status(500).json({
     success : false,
