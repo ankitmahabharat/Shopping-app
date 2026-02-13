@@ -89,91 +89,102 @@ export const verify = async (req, res) => {
   }
 };
 
-export const reVerify= async (req,res )=>{
+export const reVerify = async (req, res) => {
   try {
-    const {email}= req.body;
-    const user = await User.findOne({email})
-    if (!user){
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
       return req.status(400).json({
-        success : false,
-        message: "user not found"
-      })
+        success: false,
+        message: "user not found",
+      });
     }
-    const token =jwt.sign({id: user._id},process.env.SECRET_key,{expiresIn :'10m'})
-    verifyEmail(token,email)
-    user.token=token
-    await user.save()
+    const token = jwt.sign({ id: user._id }, process.env.SECRET_key, {
+      expiresIn: "10m",
+    });
+    verifyEmail(token, email);
+    user.token = token;
+    await user.save();
     return res.status(200).json({
       success: true,
-      message :"verification email sent again successfully",
-      token:user.token
-
-    })
-    
+      message: "verification email sent again successfully",
+      token: user.token,
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message:error.message
-    })
+      message: error.message,
+    });
   }
-}
+};
 
-export const login = async(req,res)=>{
-try {
-  const {email,password}= req.body;
-  if (!email || !password) {
-    return res.status(400).json({
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "all blanks are required",
+      });
+    }
+    const existingUser = await User.findOne({ email });
+    if (!existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "user not exist",
+      });
+    }
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      existingUser.password,
+    );
+    if (!isPasswordValid) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Credentials",
+      });
+    }
+    if (existingUser.isVerified === false) {
+      return res.status(400).json({
+        success: false,
+        message: "verify your account and login again!",
+      });
+    }
+    const accessToken = jwt.sign(
+      { id: existingUser._id },
+      process.env.SECRET_KEY,
+      { expiresIn: "10d" },
+    );
+    const refreshToken = jwt.sign(
+      { id: existingUser._id },
+      process.env.SECRET_KEY,
+      { expiresIn: "30d" },
+    );
+
+    existingUser.isLoggedIn = true;
+    await existingUser.save();
+
+    const existingSession = await Session.findOne({ userId: existingUser._id });
+    if (existingSession) {
+      await Session.deleteOne({ userId: existingUser._id });
+    }
+
+    await Session.create({ userId: existingUser._id });
+    return res.status(200).json({
+      success: true,
+      message: `Welcome back ${existingUser.firstName}`,
+      user: existingUser,
+      accessToken,
+      refreshToken,
+    });
+  } catch (error) {
+    res.status(500).json({
       success: false,
-      message : 'all files are required'
-    })
-    
+      message: error.message,
+    });
   }
-  const existingUser = await User.findOne({email})
-  if (existingUser) {
-    return res.status(400).json({
-      success : false,
-      message : "user not exist"
-    })
-    
-  }
-  const isPasswordValid = await bcrypt.compare(password, existingUser.password)
-  if(!isPasswordValid){
-    return res.status(400).json({
-      success : false,
-      message : "Invalid Credentials"
-    })
-  }
-  if (existingUser.isVerified === false) {
-    return res.status(400).json({
-      success : false,
-      message : "verify your account and login again !"
-    })
-  }
-  const accessToken = jwt.sign({id: existingUser._id}, process.env.SECRET_KEY,{expiresIn : '10d'})
-  const refreshToken = jwt.sign({id: existingUser._id}, process.env.SECRET_KEY,{expiresIn : '30d'})
+};
 
-  existingUser.isLoggedIn = true
-  await existingUser.save()
+// export const logout = async (req, res)=>{
 
-  const existingSession = await Session.findOne({userId:existingUser._id})
-  if (existingSession){
-    await Session.deleteOne({userId:existingUser._id})
-  }
-
-  await Session.create ({userId:existingUser._id})
-  return res.status(200).json({
-success :true,
-message: `Welcome back ${existingUser.firstName}`,
-user :existingUser,
-accessToken,
-refreshToken
-  })
-} catch (error) {
-  res.status(500).json({
-    success : false,
-    message : error.message
-  })
-  
-}
-
-}
+// }
