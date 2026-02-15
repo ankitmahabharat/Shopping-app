@@ -1,5 +1,6 @@
 import express from 'express';
-import { login, register, reVerify, verify } from '../controller/userController.js';
+import { login, logout, register, reVerify, verify } from '../controller/userController.js';
+import { isAuthenticated } from '../middleware/isAuthenticated.js';
 
 
 
@@ -11,6 +12,6 @@ router.post('/register', register)
 router.post('/verify', verify) 
 router.post('/reVerify', reVerify) 
 router.post('/login', login) 
-router.post('/logout', logout) 
+router.post('/logout', isAuthenticated, logout) 
 
 export default router;
