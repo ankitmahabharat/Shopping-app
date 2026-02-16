@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import verifyEmail from "../emailVerify/verifyEmail.js";
 import { Session } from "../models/sessionModel.js";
-
+import sendOTPMail from "../emailVerify/sendOTPMail.js";
 export const register = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
@@ -188,16 +188,44 @@ export const login = async (req, res) => {
 export const logout = async (req, res) => {
   try {
     const userId = req.id;
-    await Session.deleteMany({userId:userId})
-    await User.findByIdAndUpdate(userId,{isLOggedIn:false})
+    await Session.deleteMany({ userId: userId });
+    await User.findByIdAndUpdate(userId, { isLOggedIn: false });
     return res.status(200).json({
-        success : true,
-        message : "User loged out successfully"
-    })
+      success: true,
+      message: "User loged out successfully",
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,
       meassage: error.message,
+    });
+  }
+};
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await useReducer.findOne({ email });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    user.opt = otpuser.otpExpiry = otpExpiry;
+
+    await user.save();
+    await sendOTPMail(otp, email);
+    return res.status(200).json({
+      success: true,
+      message: "otp sendd to email Successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
     });
   }
 };
