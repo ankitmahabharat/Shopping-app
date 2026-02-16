@@ -187,7 +187,7 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    const iserId = req.id;
+    const userId = req.id;
     await Session.deleteMany({userId:userId})
     await User.findByIdAndUpdate(userId,{isLOggedIn:false})
     return res.status(200).json({
