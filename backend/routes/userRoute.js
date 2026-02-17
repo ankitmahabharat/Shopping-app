@@ -13,6 +13,6 @@ router.post('/verify', verify)
 router.post('/reVerify', reVerify) 
 router.post('/login', login) 
 router.post('/logout', isAuthenticated, logout) 
-router.post('/forgotPassword', isAuthenticated , forgotPassword) 
+router.post('/forgotPassword' , forgotPassword) 
 
 export default router;
