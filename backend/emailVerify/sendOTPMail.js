@@ -27,4 +27,4 @@ const sentOTPMail= async(otp, email) => {
     }
   });
 };
-export default verifyEmail;
+export default sentOTPMail;
